@@ -1,7 +1,7 @@
 # EE-APPS
 An Enterprise code bucket for managing ....
 
-Developed using state of the art concept of event driven development and domain driven design, with ingredients such as:
+Developed and inspired by the state of the art concepts of event driven development and domain driven design, with ingredients such as:
 NODEJS
 EXPRESSJS
 MONGODB
