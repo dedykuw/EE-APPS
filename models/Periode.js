@@ -7,12 +7,28 @@ const AutoPopulate = require('mongoose-autopopulate');
 class PeriodeClass {
     static get FIELDS(){
         return {
-            NAME: 'nama',
+            NAMA: 'nama',
             STATUS: 'status',
             USER: 'user',
             PAGU: 'PAGU',
-            ID: 'id'
+            ID: 'id',
+            PAGU_UNIT:'pagu_unit',
+            SEMUA_UNIT:'units'
         };
+    }
+
+    static  async totalPaguUnit(periodeObj){
+        var periode = await this.findOne(periodeObj);
+        var totalPaguUnit = await periode[this.FIELDS.PAGU_UNIT];
+        var result = totalPaguUnit.reduce(function(prev, curr){
+            return prev+curr.pagu;
+        },0);
+        return result;
+    }
+    static async checkPaguThreshold(periodeObj){
+        var periode = await this.findOne(periodeObj);
+        var totalPaguUnit = this.totalPaguUnit(periodeObj);
+        return totalPaguUnit < periode[this.FIELDS.PAGU];
     }
     static findActivePeriode(){
         var attr = {};
@@ -45,6 +61,18 @@ class PeriodeClass {
             });
         })
     }
+    static deletePeriode(periodeObj){
+        /// still need to confirm about the delete mechanism. ex cascading or persisting
+        // or auto activate the latest one if  the active one got removed
+
+        return new Promise(function (resolve, reject) {
+            this.deleteOne(periodeObj).then(function (doc) {
+                resolve(doc);
+            }).catch(function (err) {
+                reject(err);
+            })
+        })
+    }
     static createNewPeriode(periodeObj){
         return new Promise(function (resolve, reject) {
             if(periodeObj[this.FIELDS.STATUS] == true){
@@ -68,9 +96,10 @@ class PeriodeClass {
 
 /// SCHEMA DEFINITIONS
 const schema = {};
-schema[PeriodeClass.FIELDS.NAME] = { type: String, unique: true };
+schema[PeriodeClass.FIELDS.NAMA] = { type: String, unique: true };
 schema[PeriodeClass.FIELDS.STATUS] = Boolean;
 schema[PeriodeClass.FIELDS.USER] = {type: mongoose.Schema.Types.ObjectId, ref: COLLECTION_NAMES.USER};
+schema[PeriodeClass.FIELDS.PAGU_UNIT] = [{type:mongoose.Schema.Types.ObjectId, ref: COLLECTION_NAMES.PAGU_UNIT}];
 const periodeSchema = new mongoose.Schema(schema, { timestamps: true });
 periodeSchema.loadClass(PeriodeClass);
 periodeSchema.plugin(AutoIncrement, {inc_field: 'id'});
