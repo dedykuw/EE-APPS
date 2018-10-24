@@ -9,3 +9,5 @@ run cmd in underlying directory and type
 
  - npm install
  - node app.js
+ 
+ credit to Sahat
