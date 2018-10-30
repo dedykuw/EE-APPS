@@ -21,11 +21,13 @@ const sass = require('node-sass-middleware');
 const multer = require('multer');
 const Periode = require('./models/Periode');
 const upload = multer({ dest: path.join(__dirname, 'uploads') });
-
+const fs = require('fs')
+// create a write stream (in append mode)
+var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' })
 /**
  * Load environment variables from .env file, where API keys and passwords are configured.
  */
-dotenv.load({ path: '.env.example' });
+dotenv.load({ path: '.env' });
 
 /**
  * Controllers (route handlers).
@@ -61,17 +63,23 @@ mongoose.connection.on('error', (err) => {
 /**
  * Express configuration.
  */
+
+// NODE JS HOST CONFIGURATION
 app.set('host', process.env.OPENSHIFT_NODEJS_IP || '0.0.0.0');
 app.set('port', process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 8080);
+
+// VIEW DIRECTORY AND ENGINE CONFIGURATION : USING MUSTACHE  AND DIRECTORY /VIEWS
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'pug');
+
+// enable status monitor for server access to url host:port/status
 app.use(expressStatusMonitor());
 app.use(compression());
 app.use(sass({
   src: path.join(__dirname, 'public'),
   dest: path.join(__dirname, 'public')
 }));
-app.use(logger('dev'));
+app.use(logger('dev',{ stream: accessLogStream }));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(expressValidator());
