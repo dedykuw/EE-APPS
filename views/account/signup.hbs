@@ -1,0 +1,63 @@
+<!doctype html>
+<html class="no-js" lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Sign up - srtdash</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="csrf-token" content="{{_csrf}}">
+    <link rel="shortcut icon" type="image/png" href="/images/icon/favicon.ico">
+    <link rel="stylesheet" href="/css/application.min.css">
+
+</head>
+
+<body>
+<!--[if lt IE 8]>
+<p class="browserupgrade">You are using an <strong>outdated</strong> browser. Please <a href="http://browsehappy.com/">upgrade your browser</a> to improve your experience.</p>
+<![endif]-->
+<div class="login-area">
+    <div class="container">
+        <div class="login-box ptb--100">
+            <form method="POST">
+                <input type="hidden" name="_csrf" value="{{_csrf}}">
+                <div class="login-form-head">
+                    <h4>Sign up</h4>
+                    <p>Hello there, Sign up and Join with Us</p>
+                </div>
+                <div class="login-form-body">
+                    <div class="form-gp">
+                        <label for="nama">Nama</label>
+                        <input type="text" name="nama" id="nama">
+                        <i class="ti-user"></i>
+                    </div>
+                    <div class="form-gp">
+                        <label for="email">Alamat Email</label>
+                        <input type="email" id="email" placeholder="Email" autocomplete="email" autofocus required>
+                        <i class="ti-email"></i>
+                    </div>
+                    <div class="form-gp">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                        <i class="ti-lock"></i>
+                    </div>
+                    <div class="form-gp">
+                        <label for="password2">Confirm Password</label>
+                        <input type="password" id="password2" name="confirmPassword" required>
+                        <i class="ti-lock"></i>
+                    </div>
+                    <div class="submit-btn-area">
+                        <button id="form_submit" type="submit">Submit <i class="ti-arrow-right"></i></button>
+                  
+                    </div>
+                    <div class="form-footer text-center mt-5">
+                        <p class="text-muted">Don't have an account? <a href="login.html">Sign in</a></p>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+
+</html>

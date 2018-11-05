@@ -1,0 +1,35 @@
+<div class="alert-dismiss mt-2 mb-2">
+{{#if messages.info}}
+<div class="alert alert-info alert-dismissible fade show" role="alert">
+    {{#each messages.info}}
+    <strong>{{this.msg}}</strong>
+    {{/each}}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span class="fa fa-times"></span>
+    </button>
+</div>
+{{/if}}
+{{#if messages.success}}
+
+<div class="alert alert-success alert-dismissible fade show" role="alert">
+    {{#each messages.success}}
+        <strong>{{this.msg}}</strong>
+    {{/each}}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span class="fa fa-times"></span>
+    </button>
+</div>
+{{/if}}
+{{#if messages.errors}}
+    <div id="toast-error" ></div>
+
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+    {{#each messages.errors}}
+        <div><strong>{{this.msg}}</strong></div>
+    {{/each}}
+    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+        <span class="fa fa-times"></span>
+    </button>
+</div>
+{{/if}}
+</div>

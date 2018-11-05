@@ -7,28 +7,27 @@ const FIELDS = {
     UNIT: 'unit',
     PERIODE: 'periode',
     PAGU: 'pagu',
-    STATUS:'status'
+    STATUS:'status',
+    ID:'id',
 };
 const STATUS = {
   INACTIVE: 0,
   ACTIVE: 1,
   EXPIRED:2
 };
-const schema = {};
-schema[FIELDS.PAGU] = Number;
-schema[FIELDS.UNIT] = {type: mongoose.Schema.Types.ObjectId, ref:COLLECTION_NAME.UNIT};
-schema[FIELDS.STATUS] = Number;
-schema[FIELDS.PERIODE] = {type: mongoose.Schema.Types.ObjectId, ref: COLLECTION_NAME.PERIODE};
+const schema = {
+    [FIELDS.PAGU]: Number,
+    [FIELDS.UNIT]: {type: mongoose.Schema.Types.ObjectId, ref:COLLECTION_NAME.UNIT, autopopulate: true},
+    [FIELDS.STATUS]: Number,
+    [FIELDS.PERIODE]: {type: mongoose.Schema.Types.ObjectId, ref: COLLECTION_NAME.PERIODE, autopopulate: true}
+};
 
 const paguUnitSchema = new mongoose.Schema(schema, { timestamps: true });
 
-paguUnitSchema.plugin(AutoIncrement, {inc_field: 'id'});
+paguUnitSchema.plugin(AutoIncrement, {inc_field: FIELDS.ID});
 paguUnitSchema.plugin(AutoPopulate);
+const PaguUnit = mongoose.model(COLLECTION_NAME.PAGU_UNIT, paguUnitSchema, COLLECTION_NAME.PAGU_UNIT);
 
-
-
-
-const PaguUnit = mongoose.model(COLLECTION_NAME.UNIT, paguUnitSchema);
 PaguUnit.FIELDS = FIELDS;
 PaguUnit.STATUS = STATUS;
 module.exports = PaguUnit;

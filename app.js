@@ -21,7 +21,9 @@ const sass = require('node-sass-middleware');
 const multer = require('multer');
 const Periode = require('./models/Periode');
 const upload = multer({ dest: path.join(__dirname, 'uploads') });
-const fs = require('fs')
+const fs = require('fs');
+const handlebar = require( 'express-handlebars');
+const menu = require('./constant/menu');
 // create a write stream (in append mode)
 var accessLogStream = fs.createWriteStream(path.join(__dirname, 'access.log'), { flags: 'a' })
 /**
@@ -34,8 +36,10 @@ dotenv.load({ path: '.env' });
  */
 const homeController = require('./controllers/home');
 const userController = require('./controllers/user');
-const apiController = require('./controllers/api');
 const contactController = require('./controllers/contact');
+const dashboardController = require('./controllers/DashboardController');
+const periodeController = require('./controllers/PeriodeController');
+const periodeMessageService = require('./messages/PeriodeMessageService');
 
 /**
  * API keys and Passport configuration.
@@ -68,9 +72,23 @@ mongoose.connection.on('error', (err) => {
 app.set('host', process.env.OPENSHIFT_NODEJS_IP || '0.0.0.0');
 app.set('port', process.env.PORT || process.env.OPENSHIFT_NODEJS_PORT || 8080);
 
-// VIEW DIRECTORY AND ENGINE CONFIGURATION : USING MUSTACHE  AND DIRECTORY /VIEWS
+// VIEW DIRECTORY AND ENGINE CONFIGURATION : USING HANDLEBARS  AND DIRECTORY /VIEWS
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'pug');
+app.set('view engine', 'hbs');
+app.engine( 'hbs', handlebar( {
+    extname: 'hbs',
+    defaultLayout: 'default',
+    layoutsDir: __dirname + '/views/layouts/',
+    partialsDir: __dirname + '/views/partials/',
+    helpers: {
+        section: function(name, options){
+            if(!this._sections) this._sections = {};
+            this._sections[name] = options.fn(this);
+            return null;
+        }
+    }
+}));
+if (process.env.NODE_ENV === 'production') app.enable('view cache');
 
 // enable status monitor for server access to url host:port/status
 app.use(expressStatusMonitor());
@@ -79,7 +97,8 @@ app.use(sass({
   src: path.join(__dirname, 'public'),
   dest: path.join(__dirname, 'public')
 }));
-app.use(logger('dev',{ stream: accessLogStream }));
+// log the current activity to access.log file if in production mode
+process.env.NODE_ENV === 'production' ? app.use(logger('dev',{ stream: accessLogStream })) : app.use(logger('dev'));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(expressValidator());
@@ -96,6 +115,11 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(flash());
+//inject the menu object
+app.use((req, res, next)=>{
+  res.locals.menu = menu;
+  next();
+});
 app.use((req, res, next) => {
   if (req.path === '/api/upload') {
     next();
@@ -129,9 +153,10 @@ app.use('/js/lib', express.static(path.join(__dirname, 'node_modules/popper.js/d
 app.use('/js/lib', express.static(path.join(__dirname, 'node_modules/bootstrap/dist/js'), { maxAge: 31557600000 }));
 app.use('/js/lib', express.static(path.join(__dirname, 'node_modules/jquery/dist'), { maxAge: 31557600000 }));
 app.use('/webfonts', express.static(path.join(__dirname, 'node_modules/@fortawesome/fontawesome-free/webfonts'), { maxAge: 31557600000 }));
+app.use('/js/lib/fa', express.static(path.join(__dirname, 'node_modules/@fortawesome/fontawesome-free'), { maxAge: 31557600000 }));
 
 /**
- * Primary app routes.
+ * Account app routes.
  */
 app.get('/', homeController.index);
 app.get('/login', userController.getLogin);
@@ -150,15 +175,18 @@ app.post('/account/profile', passportConfig.isAuthenticated, userController.post
 app.post('/account/password', passportConfig.isAuthenticated, userController.postUpdatePassword);
 app.post('/account/delete', passportConfig.isAuthenticated, userController.postDeleteAccount);
 app.get('/account/unlink/:provider', passportConfig.isAuthenticated, userController.getOauthUnlink);
-app.get('/test', ()=>{
-  var attr = {};
-  attr[Periode.FIELDS.NAME] = '2009/20010';
-  attr[Periode.FIELDS.STATUS] = true;
-  Periode.create(attr).then(doc=>{
-    console.log(doc);
-    Periode.deactiveAllPeriode().then(doc=>console.log(doc))
-  });
-});
+
+/**
+ * Dashboard app routes.
+ */
+
+app.get('/dashboard', passportConfig.isAuthenticated, dashboardController.dashboard);
+app.get(periodeController.ROUTE_LIST.INDEX_PERIODE, passportConfig.isAuthenticated, periodeController.indexPeriode);
+app.get(periodeController.ROUTE_LIST.CREATE_PERIODE, passportConfig.isAuthenticated, periodeController.getNew);
+app.post(periodeController.ROUTE_LIST.CREATE_PERIODE, passportConfig.isAuthenticated, periodeController.postNew);
+app.get(periodeController.ROUTE_LIST.DETAIL_PERIODE, passportConfig.isAuthenticated, periodeController.detailPeriode);
+app.get(periodeController.ROUTE_LIST.DETAIL_PAGU_UNIT, passportConfig.isAuthenticated, periodeController.detailPaguUnit);
+
 /**
  * Error Handler.
  */

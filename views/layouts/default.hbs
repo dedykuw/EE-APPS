@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{_csrf}}">
+    <link rel="shortcut icon" type="image/png" href="/images/icon/favicon.ico">
+    <link rel="stylesheet" href="/css/bootstrap.css">
+    <link rel="stylesheet" href="/css/animate.css">
+    <link rel="stylesheet" href="/css/font-awesome.css">
+    <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/sweetalert.css">
+    <link rel="stylesheet" href="/css/toastr.min.css">
+    <link rel="stylesheet" href="/css/datatables.min.css">
+    {{{_sections.style}}}
+    <title>RKA-KL APPS Universitas Sriwijaya</title>
+</head>
+
+<body>
+<div id="wrapper">
+
+    <!-- sidebar menu area start -->
+    {{>sidebar}}
+
+    <div id="page-wrapper" class="gray-bg">
+
+
+        <!-- header menu area start -->
+        {{>header}}
+        {{>breadcrumb}}
+
+
+        <div class="wrapper wrapper-content animated fadeInRight">
+            {{>flash}}
+            {{{body}}}
+
+        </div>
+
+
+
+        <!-- footer area start-->
+        {{>footer}}
+        <!-- footer area end-->
+
+    </div>
+
+</div>
+
+<!-- Mainly scripts -->
+
+<!-- Mainly scripts -->
+<script src="/js/lib/jquery-3.1.1.min.js"></script>
+<script src="/js/lib/popper.min.js"></script>
+<script src="/js/lib/bootstrap.js"></script>
+<script src="/js/lib/jquery.metisMenu.js"></script>
+<script src="/js/lib/jquery.slimscroll.js"></script>
+<script src="/js/lib/toastr.min.js"></script>
+<script src="/js/lib/pace.min.js"></script>
+<script src="/js/lib/datatables.min.js"></script>
+<script src="/js/lib/dataTables.bootstrap4.min.js"></script>
+<script src="/js/lib/flot/jquery.flot.js"></script>
+<script src="/js/lib/flot/jquery.flot.tooltip.min.js"></script>
+<script src="/js/lib/flot/jquery.flot.pie.js"></script>
+<!-- Custom and plugin javascript -->
+<script src="/js/lib/inspinia.js"></script>
+<script src="/js/lib/my.js"></script>
+
+<!-- jQuery UI -->
+<script src="/js/lib/jquery-ui.min.js"></script>
+{{{_sections.script}}}
+
+</body>
+</html>

@@ -3,8 +3,7 @@ const AutoIncrement = require('mongoose-sequence')(mongoose);
 const COLLECTION_NAMES = require('../models/COLLECTION_NAMES');
 const AutoPopulate = require('mongoose-autopopulate');
 const PaguUnit = require('../models/Pagu_unit');
-const Unit = mongoose.models.Unit;
-
+const Unit = require('../models/Unit');
 //CLASS IDENTITTY DEFINITIONS
 class PeriodeClass {
     static get FIELDS(){
@@ -13,15 +12,33 @@ class PeriodeClass {
             STATUS: 'status',
             USER: 'user',
             PAGU: 'PAGU',
-            ID: 'id',
+            ID: 'periode_id',
             PAGU_UNIT:'pagu_unit',
             SEMUA_UNIT:'units'
         };
     }
-
+    static getAllPeriodeData(){
+        return new Promise(function (resolve, reject) {
+            Periode.find({}).exec(function (err, periodes) {
+                if (err) reject(err);
+                resolve(periodes);
+            });
+        })
+    }
+    get totalPaguUnit(){
+        var totalPaguUnit = this[PeriodeClass.FIELDS.PAGU_UNIT];
+        var result = totalPaguUnit.reduce(function(prev, curr){
+            return prev+curr.pagu;
+        },0);
+        return result;
+    }
+    get totalAvailablePagu(){
+        var margin = this[PeriodeClass.FIELDS.PAGU]- this.totalPaguUnit;
+        return margin;
+    }
     static  async totalPaguUnit(periodeObj){
         var periode = await this.findOne(periodeObj);
-        var totalPaguUnit = await periode[this.FIELDS.PAGU_UNIT];
+        var totalPaguUnit = await periode[PeriodeClass.FIELDS.PAGU_UNIT];
         var result = totalPaguUnit.reduce(function(prev, curr){
             return prev+curr.pagu;
         },0);
@@ -29,29 +46,23 @@ class PeriodeClass {
     }
     static async checkPaguThreshold(periodeObj){
         var periode = await this.findOne(periodeObj);
-        var totalPaguUnit = this.totalPaguUnit(periodeObj);
-        return totalPaguUnit < periode[this.FIELDS.PAGU];
+        var totalPaguUnit = PeriodeClass.totalPaguUnit(periodeObj);
+        return totalPaguUnit < periode[PeriodeClass.FIELDS.PAGU];
     }
     static findActivePeriode(){
-        var attr = {};
-        attr[this.FIELDS.STATUS] = true;
-        return this.findOne(attr);
+        var attr = {[PeriodeClass.FIELDS.STATUS]: true};
+        return PeriodeClass.findOne(attr);
     }
     static deactiveAllPeriode(){
-        var activePeriodeCriteria = {};
-        activePeriodeCriteria[this.FIELDS.STATUS] = true;
-        var updateWith = {};
-        updateWith[this.FIELDS.STATUS] = false;
-        return this.updateMany(activePeriodeCriteria, updateWith);
+        var activePeriodeCriteria = {[PeriodeClass.FIELDS.STATUS]: true};
+        var updateWith = {[PeriodeClass.FIELDS.STATUS]: false};
+        return Periode.updateMany(activePeriodeCriteria, updateWith);
     }
     static activatePeriode(periodeId){
         return new Promise(function(resolve, reject){
-            this.deactiveAllPeriode().then(function(){
-                var searchCriteria = {};
-                searchCriteria[this.FIELDS.ID] = periodeId;
-                var updateWith = {};
-                updateWith[this.FIELDS.STATUS] = true;
-
+            PeriodeClass.deactiveAllPeriode().then(function(){
+                var searchCriteria = {[PeriodeClass.FIELDS.ID]: periodeId};
+                var updateWith = {[PeriodeClass.FIELDS.STATUS]: true};
                 this.update(searchCriteria,updateWith)
                     .then(function (doc) {
                         resolve(doc)
@@ -59,7 +70,6 @@ class PeriodeClass {
                     .catch(function (err) {
                         reject(err)
                     });
-
             });
         })
     }
@@ -76,36 +86,41 @@ class PeriodeClass {
         })
     }
     static async checkExist(periodeObj){
-        var periode = await this.findOne({[this.FIELDS.NAMA]: periodeObj[this.FIELDS.NAMA]}).exec();
-        return periode[this.FIELDS.NAMA] != undefined;
+        try {
+            return Periode.findOne({[PeriodeClass.FIELDS.NAMA]: periodeObj[PeriodeClass.FIELDS.NAMA]});
+        }catch (e) {
+            console.log(e);
+            throw new Error(`Unable to connect to the database.`)
+        }
     }
-    static createNewPeriode(periodeObj){
+    static async createNewPeriode(periodeObj){
+        var exist = await PeriodeClass.checkExist(periodeObj);
         return new Promise(function (resolve, reject) {
-            if (this.checkExist){
-                if(periodeObj[this.FIELDS.STATUS] == true){
-                    this.deactiveAllPeriode().then(function(){
-                        var newPeriode = new this(periodeObj);
+            if (!exist){
+                if(periodeObj[PeriodeClass.FIELDS.STATUS] ==  true){
+                    PeriodeClass.deactiveAllPeriode().then(function(){
+                        var newPeriode = new Periode(periodeObj);
                         newPeriode.save(function (err, periode) {
                             if (err) reject(err);
                             resolve(periode);
                         })
                     })
                 }else {
-                    var newPeriode = new this(periodeObj);
+                    var newPeriode = new Periode(periodeObj);
                     newPeriode.save(function (err, periode) {
                         if (err) reject(err);
                         resolve(periode);
                     })
                 }
             }else {
-                reject('already exist');
+                reject('exist');
             }
         })
     };
     static createNewPeriodeWithPaguUnit(periodeObj){
         return new Promise(function (resolve, reject) {
-            this.createNewPeriode(periodeObj).then(function (periode) {
-                Unit.find(function (err, units) {
+            PeriodeClass.createNewPeriode(periodeObj).then(function (periode) {
+                Unit.find({},function (err, units) {
                     var allPaguUnits = units.map(unit=>{
                         return {
                             [PaguUnit.FIELDS.PERIODE]: periode._id,
@@ -115,6 +130,8 @@ class PeriodeClass {
                         }
                     });
                     PaguUnit.create(allPaguUnits).then(function (allPagus) {
+                        allPagus.forEach(pagu=>periode[PeriodeClass.FIELDS.PAGU_UNIT].push(pagu._id));
+                        periode.save();
                         resolve({
                             periode: periode,
                             paguUnit: allPagus
@@ -130,17 +147,23 @@ class PeriodeClass {
             })
         })
     }
+    static async countPaguUnits(periodeId){
+        var periode = await Periode.findOne({[PeriodeClass.FIELDS.ID]: periodeId}).exec();
+        return periode[PeriodeClass.FIELDS.PAGU_UNIT].length;
+    }
 }
 
 /// SCHEMA DEFINITIONS
-const schema = {};
-schema[PeriodeClass.FIELDS.NAMA] = { type: String, unique: true };
-schema[PeriodeClass.FIELDS.STATUS] = Boolean;
-schema[PeriodeClass.FIELDS.USER] = {type: mongoose.Schema.Types.ObjectId, ref: COLLECTION_NAMES.USER};
-schema[PeriodeClass.FIELDS.PAGU_UNIT] = [{type:mongoose.Schema.Types.ObjectId, ref: COLLECTION_NAMES.PAGU_UNIT}];
+const schema = {
+    [PeriodeClass.FIELDS.NAMA]: { type: String, unique: true },
+    [PeriodeClass.FIELDS.STATUS]: Boolean,
+    [PeriodeClass.FIELDS.USER]: {type: mongoose.Schema.Types.ObjectId, ref: COLLECTION_NAMES.USER},
+    [PeriodeClass.FIELDS.PAGU]: Number,
+    [PeriodeClass.FIELDS.PAGU_UNIT]: [{type:mongoose.Schema.Types.ObjectId, ref: COLLECTION_NAMES.PAGU_UNIT, autopopulate: true}]
+};
 const periodeSchema = new mongoose.Schema(schema, { timestamps: true });
 periodeSchema.loadClass(PeriodeClass);
-periodeSchema.plugin(AutoIncrement, {inc_field: 'periode_id'});
+periodeSchema.plugin(AutoIncrement, {inc_field: PeriodeClass.FIELDS.ID});
 periodeSchema.plugin(AutoPopulate);
 
 
